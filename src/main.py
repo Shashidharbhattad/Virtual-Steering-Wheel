@@ -4,6 +4,14 @@ from ui import (
     draw_steering_bar,
     draw_virtual_wheel,
     steering_percentage,
+    draw_dashboard,      # <-- Add this
+)
+from ui import (
+    draw_fps,
+    draw_steering_bar,
+    draw_virtual_wheel,
+    steering_percentage,
+    draw_dashboard,
 )
 
 
@@ -95,6 +103,8 @@ while True:
             result.hand_landmarks[1],
             frame,
         )
+        # Keep the left-most hand as center1
+       
 
         draw_virtual_wheel(
             frame,
@@ -138,6 +148,7 @@ while True:
 
     else:
         release_all()
+    draw_dashboard(frame)
     draw_fps(frame)
     cv2.imshow("Virtual Steering Wheel", frame)
 
