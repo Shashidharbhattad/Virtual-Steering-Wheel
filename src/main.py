@@ -6,6 +6,27 @@ import time
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+
+
+def draw_landmarks(frame, detection_result):
+
+    h, w, _ = frame.shape
+
+    for hand_landmarks in detection_result.hand_landmarks:
+
+        # Draw all 21 landmarks
+        for landmark in hand_landmarks:
+
+            x = int(landmark.x * w)
+            y = int(landmark.y * h)
+
+            cv2.circle(
+                frame,
+                (x, y),
+                5,
+                (0, 255, 0),
+                -1
+            )
 # ----------------------------
 # Load Hand Landmarker Model
 # ----------------------------
@@ -61,9 +82,14 @@ while True:
 
     # Detect hands
     result = detector.detect_for_video(mp_image, timestamp_ms)
+    
+    
 
+    draw_landmarks(frame, result)
     # Number of hands
     hand_count = len(result.hand_landmarks)
+   
+   
 
     if hand_count > 0:
         cv2.putText(
