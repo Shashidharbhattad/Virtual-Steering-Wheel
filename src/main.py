@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
+import math
 
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -56,21 +57,49 @@ def get_finger_states(hand_landmarks):
 # ---------------------------------------
 def recognize_gesture(fingers):
 
-    index = fingers["Index"]
-    middle = fingers["Middle"]
-    ring = fingers["Ring"]
-    pinky = fingers["Pinky"]
-
-    if index and middle and ring and pinky:
+    if all(fingers.values()):
         return "OPEN PALM"
 
-    if not index and not middle and not ring and not pinky:
+    if not any(fingers.values()):
         return "FIST"
 
-    if index and not middle and not ring and not pinky:
+    if (
+        fingers["Index"]
+        and not fingers["Middle"]
+        and not fingers["Ring"]
+        and not fingers["Pinky"]
+    ):
         return "POINTING"
 
     return "UNKNOWN"
+
+
+# ---------------------------------------
+# Get hand center (Wrist)
+# ---------------------------------------
+def get_hand_center(hand_landmarks, frame):
+
+    h, w, _ = frame.shape
+
+    wrist = hand_landmarks[0]
+
+    x = int(wrist.x * w)
+    y = int(wrist.y * h)
+
+    return (x, y)
+
+
+# ---------------------------------------
+# Calculate Steering Angle
+# ---------------------------------------
+def calculate_angle(left_hand, right_hand):
+
+    dx = right_hand[0] - left_hand[0]
+    dy = right_hand[1] - left_hand[1]
+
+    angle = math.degrees(math.atan2(dy, dx))
+
+    return int(angle)
 
 
 # ---------------------------------------
@@ -90,7 +119,6 @@ detector = vision.HandLandmarker.create_from_options(options)
 
 print("✅ Hand Landmarker loaded successfully!")
 
-
 # ---------------------------------------
 # Webcam
 # ---------------------------------------
@@ -101,7 +129,6 @@ if not cap.isOpened():
     exit()
 
 print("✅ Webcam started. Press Q to quit.")
-
 
 # ---------------------------------------
 # Main Loop
@@ -140,11 +167,12 @@ while True:
         2
     )
 
-    if hand_count > 0:
+    # -----------------------------
+    # First Hand Information
+    # -----------------------------
+    if hand_count >= 1:
 
-        hand_landmarks = result.hand_landmarks[0]
-
-        fingers = get_finger_states(hand_landmarks)
+        fingers = get_finger_states(result.hand_landmarks[0])
 
         gesture = recognize_gesture(fingers)
 
@@ -152,11 +180,9 @@ while True:
 
         for finger, state in fingers.items():
 
-            text = f"{finger}: {'Open' if state else 'Closed'}"
-
             cv2.putText(
                 frame,
-                text,
+                f"{finger}: {'Open' if state else 'Closed'}",
                 (20, y),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.65,
@@ -171,8 +197,39 @@ while True:
             f"Gesture: {gesture}",
             (20, 210),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.9,
+            0.8,
             (0, 0, 255),
+            2
+        )
+
+    # -----------------------------
+    # Virtual Steering Wheel
+    # -----------------------------
+    if hand_count == 2:
+
+        center1 = get_hand_center(result.hand_landmarks[0], frame)
+        center2 = get_hand_center(result.hand_landmarks[1], frame)
+
+        # Draw wheel
+        cv2.circle(frame, center1, 12, (255, 0, 0), -1)
+        cv2.circle(frame, center2, 12, (255, 0, 0), -1)
+
+        cv2.line(frame, center1, center2, (0, 255, 255), 4)
+
+        angle = calculate_angle(center1, center2)
+
+        midpoint = (
+            (center1[0] + center2[0]) // 2,
+            (center1[1] + center2[1]) // 2
+        )
+
+        cv2.putText(
+            frame,
+            f"Angle: {angle} deg",
+            midpoint,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 255, 255),
             2
         )
 
@@ -180,7 +237,6 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
-
 
 cap.release()
 cv2.destroyAllWindows()
