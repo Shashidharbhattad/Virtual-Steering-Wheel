@@ -13,9 +13,7 @@ def draw_landmarks(frame, detection_result):
     h, w, _ = frame.shape
 
     for hand_landmarks in detection_result.hand_landmarks:
-
         for idx, landmark in enumerate(hand_landmarks):
-
             x = int(landmark.x * w)
             y = int(landmark.y * h)
 
@@ -32,6 +30,25 @@ def draw_landmarks(frame, detection_result):
                 (255, 255, 255),
                 1
             )
+
+
+# ---------------------------------------
+# Detect finger states
+# ---------------------------------------
+def get_finger_states(hand_landmarks):
+    fingers = {}
+
+    finger_pairs = {
+        "Index": (8, 6),
+        "Middle": (12, 10),
+        "Ring": (16, 14),
+        "Pinky": (20, 18),
+    }
+
+    for finger, (tip, joint) in finger_pairs.items():
+        fingers[finger] = hand_landmarks[tip].y < hand_landmarks[joint].y
+
+    return fingers
 
 
 # ---------------------------------------
@@ -77,7 +94,7 @@ while True:
     # Mirror image
     frame = cv2.flip(frame, 1)
 
-    # Convert BGR to RGB
+    # Convert BGR → RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # Create MediaPipe Image
@@ -95,23 +112,46 @@ while True:
     # Draw landmarks
     draw_landmarks(frame, result)
 
-    # Display number of hands
+    # Number of hands
     hand_count = len(result.hand_landmarks)
 
     cv2.putText(
         frame,
         f"Hands: {hand_count}",
-        (20, 40),
+        (20, 35),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
         (0, 255, 0),
         2
     )
 
-    # Show frame
+    # Detect finger states for first hand
+    if hand_count > 0:
+
+        fingers = get_finger_states(result.hand_landmarks[0])
+
+        y = 70
+
+        for finger, state in fingers.items():
+
+            text = f"{finger}: {'Open' if state else 'Closed'}"
+
+            cv2.putText(
+                frame,
+                text,
+                (20, y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 0),
+                2
+            )
+
+            y += 30
+
+    # Show webcam
     cv2.imshow("Virtual Steering Wheel", frame)
 
-    # Exit
+    # Quit
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
