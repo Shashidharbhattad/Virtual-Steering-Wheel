@@ -14,13 +14,12 @@ def draw_landmarks(frame, detection_result):
 
     for hand_landmarks in detection_result.hand_landmarks:
         for idx, landmark in enumerate(hand_landmarks):
+
             x = int(landmark.x * w)
             y = int(landmark.y * h)
 
-            # Draw landmark
             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
 
-            # Draw landmark ID
             cv2.putText(
                 frame,
                 str(idx),
@@ -36,6 +35,7 @@ def draw_landmarks(frame, detection_result):
 # Detect finger states
 # ---------------------------------------
 def get_finger_states(hand_landmarks):
+
     fingers = {}
 
     finger_pairs = {
@@ -49,6 +49,28 @@ def get_finger_states(hand_landmarks):
         fingers[finger] = hand_landmarks[tip].y < hand_landmarks[joint].y
 
     return fingers
+
+
+# ---------------------------------------
+# Gesture Recognition
+# ---------------------------------------
+def recognize_gesture(fingers):
+
+    index = fingers["Index"]
+    middle = fingers["Middle"]
+    ring = fingers["Ring"]
+    pinky = fingers["Pinky"]
+
+    if index and middle and ring and pinky:
+        return "OPEN PALM"
+
+    if not index and not middle and not ring and not pinky:
+        return "FIST"
+
+    if index and not middle and not ring and not pinky:
+        return "POINTING"
+
+    return "UNKNOWN"
 
 
 # ---------------------------------------
@@ -70,7 +92,7 @@ print("✅ Hand Landmarker loaded successfully!")
 
 
 # ---------------------------------------
-# Open Webcam
+# Webcam
 # ---------------------------------------
 cap = cv2.VideoCapture(0)
 
@@ -91,28 +113,21 @@ while True:
     if not ret:
         break
 
-    # Mirror image
     frame = cv2.flip(frame, 1)
 
-    # Convert BGR → RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Create MediaPipe Image
     mp_image = mp.Image(
         image_format=mp.ImageFormat.SRGB,
         data=rgb_frame
     )
 
-    # Timestamp
     timestamp_ms = int(time.time() * 1000)
 
-    # Detect hands
     result = detector.detect_for_video(mp_image, timestamp_ms)
 
-    # Draw landmarks
     draw_landmarks(frame, result)
 
-    # Number of hands
     hand_count = len(result.hand_landmarks)
 
     cv2.putText(
@@ -125,10 +140,13 @@ while True:
         2
     )
 
-    # Detect finger states for first hand
     if hand_count > 0:
 
-        fingers = get_finger_states(result.hand_landmarks[0])
+        hand_landmarks = result.hand_landmarks[0]
+
+        fingers = get_finger_states(hand_landmarks)
+
+        gesture = recognize_gesture(fingers)
 
         y = 70
 
@@ -141,17 +159,25 @@ while True:
                 text,
                 (20, y),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
+                0.65,
                 (255, 255, 0),
                 2
             )
 
             y += 30
 
-    # Show webcam
+        cv2.putText(
+            frame,
+            f"Gesture: {gesture}",
+            (20, 210),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 0, 255),
+            2
+        )
+
     cv2.imshow("Virtual Steering Wheel", frame)
 
-    # Quit
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
