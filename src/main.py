@@ -3,6 +3,11 @@ import mediapipe as mp
 import time
 import math
 
+# ---------------------------------------
+# Steering Smoothing
+# ---------------------------------------
+smoothed_angle = 0
+
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
@@ -94,13 +99,29 @@ def get_hand_center(hand_landmarks, frame):
 # ---------------------------------------
 def calculate_angle(left_hand, right_hand):
 
+    global smoothed_angle
+
     dx = right_hand[0] - left_hand[0]
     dy = right_hand[1] - left_hand[1]
 
     angle = math.degrees(math.atan2(dy, dx))
 
-    return int(angle)
+    # Exponential smoothing
+    alpha = 0.2
+    smoothed_angle = alpha * angle + (1 - alpha) * smoothed_angle
 
+    return int(smoothed_angle)
+
+def steering_direction(angle):
+
+    if angle < -15:
+        return "LEFT"
+
+    elif angle > 15:
+        return "RIGHT"
+
+    else:
+        return "STRAIGHT"
 
 # ---------------------------------------
 # Load Hand Landmarker
@@ -130,6 +151,9 @@ if not cap.isOpened():
 
 print("✅ Webcam started. Press Q to quit.")
 
+# ---------------------------------------
+# Main Loop
+# ---------------------------------------
 # ---------------------------------------
 # Main Loop
 # ---------------------------------------
@@ -167,9 +191,9 @@ while True:
         2
     )
 
-    # -----------------------------
+    # ---------------------------------------
     # First Hand Information
-    # -----------------------------
+    # ---------------------------------------
     if hand_count >= 1:
 
         fingers = get_finger_states(result.hand_landmarks[0])
@@ -202,9 +226,9 @@ while True:
             2
         )
 
-    # -----------------------------
+    # ---------------------------------------
     # Virtual Steering Wheel
-    # -----------------------------
+    # ---------------------------------------
     if hand_count == 2:
 
         center1 = get_hand_center(result.hand_landmarks[0], frame)
@@ -216,7 +240,11 @@ while True:
 
         cv2.line(frame, center1, center2, (0, 255, 255), 4)
 
+        # Calculate steering angle
         angle = calculate_angle(center1, center2)
+
+        # Determine steering direction
+        direction = steering_direction(angle)
 
         midpoint = (
             (center1[0] + center2[0]) // 2,
@@ -230,6 +258,16 @@ while True:
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
             (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            f"Steering: {direction}",
+            (20, 260),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 255, 255),
             2
         )
 
