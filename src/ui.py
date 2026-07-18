@@ -16,14 +16,14 @@ def draw_fps(frame):
     _prev_time = current_time
 
     cv2.putText(
-        frame,
-        f"FPS : {int(fps)}",
-        (20, 30),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.8,
-        (0, 255, 0),
-        2,
-    )
+    frame,
+    f"FPS: {fps:.1f}",
+    (20, 70),      # Move below Hands
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.8,
+    (0, 255, 0),
+    2,
+)
 
 
 # ---------------------------------------
@@ -58,7 +58,7 @@ def draw_steering_bar(frame, angle):
     )
 
     # Scale angle to pixels
-    offset = int((angle / 90) * (width // 2))
+    offset = int((-angle / 90) * (width // 2))
 
     if offset < 0:
         # LEFT (green)
@@ -160,10 +160,10 @@ def steering_percentage(angle):
     percentage = abs(angle) / 90 * 100
 
     if angle < 0:
-        direction = "LEFT"
+        direction = "Right"
 
     elif angle > 0:
-        direction = "RIGHT"
+        direction = "left"
 
     else:
         direction = "STRAIGHT"
