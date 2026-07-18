@@ -1,4 +1,11 @@
 import cv2
+from ui import (
+    draw_fps,
+    draw_steering_bar,
+    draw_virtual_wheel,
+    steering_percentage,
+)
+
 
 from hand_detector import HandDetector
 from gesture import get_finger_states, recognize_gesture
@@ -89,20 +96,18 @@ while True:
             frame,
         )
 
-        cv2.circle(frame, center1, 12, (255, 0, 0), -1)
-        cv2.circle(frame, center2, 12, (255, 0, 0), -1)
-
-        cv2.line(
+        draw_virtual_wheel(
             frame,
             center1,
             center2,
-            (0, 255, 255),
-            4,
-        )
+            )
 
         angle = calculate_angle(center1, center2)
+        draw_steering_bar(frame, angle)
 
-        direction = steering_direction(angle)
+        direction, percent = steering_percentage(angle)
+
+       
 
         update_keyboard(direction)
 
@@ -133,7 +138,7 @@ while True:
 
     else:
         release_all()
-
+    draw_fps(frame)
     cv2.imshow("Virtual Steering Wheel", frame)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
