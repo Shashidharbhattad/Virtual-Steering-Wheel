@@ -7,6 +7,7 @@ from ui import (
     steering_percentage,
     draw_dashboard,
     draw_dashboard_info,
+    draw_steering_gauge,
 )
 
 from hand_detector import HandDetector
@@ -134,7 +135,10 @@ while True:
     # Dashboard
     # -----------------------------
     draw_dashboard(frame)
-
+    draw_steering_gauge(
+    frame,
+    angle,
+    )
     draw_dashboard_info(
         frame,
         hand_count,

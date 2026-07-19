@@ -1,5 +1,6 @@
 import cv2
 import time
+import numpy as np
 # --------------------------------------
 # FPS Counter
 # ---------------------------------------
@@ -25,6 +26,48 @@ def draw_fps(frame):
     2,
 )
 
+def draw_steering_gauge(frame, angle):
+
+    center = (520, 350)
+    radius = 70
+
+    # Outer circle
+    cv2.circle(frame, center, radius, (255, 255, 255), 2)
+
+    # Inner circle
+    cv2.circle(frame, center, 6, (255, 255, 255), -1)
+
+    # Clamp angle
+    angle = max(-90, min(90, angle))
+
+    # Convert to radians
+    theta = np.radians(-angle - 90)
+
+    x = int(center[0] + radius * np.cos(theta))
+    y = int(center[1] + radius * np.sin(theta))
+
+    # Needle
+    cv2.line(frame, center, (x, y), (0, 255, 255), 3)
+
+    cv2.putText(
+        frame,
+        "STEERING",
+        (center[0] - 45, center[1] + 95),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+
+    cv2.putText(
+        frame,
+        f"{angle:.1f} deg",
+        (center[0] - 30, center[1] + 120),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.5,
+        (0, 255, 255),
+        2,
+    )
 
 # ---------------------------------------
 # Steering Bar
