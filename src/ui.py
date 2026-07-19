@@ -276,3 +276,40 @@ def draw_dashboard(frame):
         (120, 120, 120),
         1,
     )
+def draw_dashboard_info(
+    frame,
+    hands,
+    fps,
+    gesture,
+    steering,
+    angle,
+    turn,
+):
+
+    x = 25
+    y = 85
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    info = [
+        ("Hands", hands),
+        ("FPS", f"{fps:.1f}"),
+        ("Gesture", gesture),
+        ("Steering", steering),
+        ("Angle", f"{angle:.1f}°"),
+        ("Turn", f"{turn}%"),
+    ]
+
+    for label, value in info:
+
+        cv2.putText(
+            frame,
+            f"{label:<10}: {value}",
+            (x, y),
+            font,
+            0.65,
+            (255, 255, 255),
+            2,
+        )
+
+        y += 30

@@ -1,27 +1,21 @@
 import cv2
-from ui import (
-    draw_fps,
-    draw_steering_bar,
-    draw_virtual_wheel,
-    steering_percentage,
-    draw_dashboard,      # <-- Add this
-)
+
 from ui import (
     draw_fps,
     draw_steering_bar,
     draw_virtual_wheel,
     steering_percentage,
     draw_dashboard,
+    draw_dashboard_info,
 )
-
 
 from hand_detector import HandDetector
 from gesture import get_finger_states, recognize_gesture
 from steering import (
     get_hand_center,
     calculate_angle,
-    steering_direction,
 )
+
 from keyboard_controller import (
     update_keyboard,
     release_all,
@@ -50,16 +44,17 @@ while True:
 
     hand_count = len(result.hand_landmarks)
 
-    cv2.putText(
-        frame,
-        f"Hands : {hand_count}",
-        (20, 35),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 255, 0),
-        2,
-    )
+    # -----------------------------
+    # Default values
+    # -----------------------------
+    gesture = "--"
+    direction = "STRAIGHT"
+    angle = 0.0
+    percent = 0
 
+    # -----------------------------
+    # Single Hand
+    # -----------------------------
     if hand_count >= 1:
 
         fingers = get_finger_states(result.hand_landmarks[0])
@@ -82,16 +77,9 @@ while True:
 
             y += 30
 
-        cv2.putText(
-            frame,
-            f"Gesture: {gesture}",
-            (20, 210),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 0, 255),
-            2,
-        )
-
+    # -----------------------------
+    # Two Hands
+    # -----------------------------
     if hand_count == 2:
 
         center1 = get_hand_center(
@@ -103,21 +91,24 @@ while True:
             result.hand_landmarks[1],
             frame,
         )
-        # Keep the left-most hand as center1
-       
 
         draw_virtual_wheel(
             frame,
             center1,
             center2,
-            )
+        )
 
-        angle = calculate_angle(center1, center2)
-        draw_steering_bar(frame, angle)
+        angle = calculate_angle(
+            center1,
+            center2,
+        )
+
+        draw_steering_bar(
+            frame,
+            angle,
+        )
 
         direction, percent = steering_percentage(angle)
-
-       
 
         update_keyboard(direction)
 
@@ -128,7 +119,7 @@ while True:
 
         cv2.putText(
             frame,
-            f"Angle : {angle}",
+            f"Angle : {angle:.1f}°",
             midpoint,
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
@@ -136,21 +127,33 @@ while True:
             2,
         )
 
-        cv2.putText(
-            frame,
-            f"Steering : {direction}",
-            (20, 260),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.9,
-            (0, 255, 255),
-            2,
-        )
-
     else:
         release_all()
+
+    # -----------------------------
+    # Dashboard
+    # -----------------------------
     draw_dashboard(frame)
+
+    draw_dashboard_info(
+        frame,
+        hand_count,
+        0,              # FPS (we'll connect this later)
+        gesture,
+        direction,
+        angle,
+        percent,
+    )
+
+    # -----------------------------
+    # FPS
+    # -----------------------------
     draw_fps(frame)
-    cv2.imshow("Virtual Steering Wheel", frame)
+
+    cv2.imshow(
+        "Virtual Steering Wheel",
+        frame,
+    )
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
